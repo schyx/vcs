@@ -7,6 +7,6 @@ This is my attempt to implement a git-like version control system in Rust!
 
 2. If no operation with that name exists (yet), will output `No operation with that name exists (yet).`
 
-3. If an operation needs to be in a vcs directory, will output `Expected operation to be in a \`vcs directory \`.`
+3. If an operation needs to be in a vcs directory, will output ``Expected operation to be in a `vcs` directory.``
 
 ### Individual Operation Rules
