@@ -19,9 +19,9 @@ mod tests {
      *      Partition on whether vcs was already initialized: yes, no
      */
 
-    use std::{env, fs, path};
+    use std::{env::set_current_dir, fs::metadata, path::Path};
 
-    use super::super::super::utils::test_dir;
+    use super::super::super::utils::test_dir::make_test_dir;
     use super::*;
 
     #[test]
@@ -40,7 +40,7 @@ mod tests {
 
     #[test]
     fn zero_arguments_not_in_vcs_dir() {
-        let _ = test_dir::make_test_dir();
+        let _ = make_test_dir();
 
         let test_args: Vec<String> = vec!["target/debug/vcs".to_string(), "init".to_string()];
 
@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn one_argument_in_vcs_dir() {
-        let _ = test_dir::make_test_dir();
+        let _ = make_test_dir();
 
         let test_args: Vec<String> = vec![
             "target/debug/vcs".to_string(),
@@ -61,7 +61,7 @@ mod tests {
         ];
 
         assert_eq!("", init(&test_args));
-        let _ = env::set_current_dir("test_dir");
+        let _ = set_current_dir("test_dir");
         check_empty_vcs_directory_exists();
     }
 
@@ -72,8 +72,8 @@ mod tests {
     }
 
     fn directory_exists(path: &str) -> bool {
-        let path = path::Path::new(path);
-        fs::metadata(path)
+        let path = Path::new(path);
+        metadata(path)
             .map(|metadata| metadata.is_dir())
             .unwrap_or(false)
     }
