@@ -13,3 +13,7 @@ This is my attempt to implement a git-like version control system in Rust!
 
 #### `init`
 1. If `init` is called when already in a VCS directory, will output `Already in a vcs directory`.
+
+
+## Notes
+1. Tests should be run in parallel. To do this, run `cargo test -- --test-threads=1`.
