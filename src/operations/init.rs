@@ -7,7 +7,7 @@
 /// If already in a vcs directory, logs `Already in a vcs directory.` to the console.
 ///
 /// * `args` - arguments `init` was called with
-pub fn init(_args: Vec<String>) -> String {
+pub fn init(_args: &Vec<String>) -> String {
     String::from("")
 }
 
@@ -19,26 +19,62 @@ mod tests {
      *      Partition on whether vcs was already initialized: yes, no
      */
 
+    use std::{env, fs, path};
+
+    use super::super::super::utils::test_dir;
     use super::*;
 
     #[test]
     fn more_than_one_argument() {
         let test_args: Vec<String> = vec![
             "target/debug/vcs".to_string(),
+            "init".to_string(),
             "arg1".to_string(),
             "arg2".to_string(),
         ];
         assert_eq!(
             "Incorrect number of arguments. Expected 0 or 1 arguments.",
-            init(test_args)
+            init(&test_args)
         );
     }
 
     #[test]
     fn zero_arguments_not_in_vcs_dir() {
-        // use fs::readdir I think
+        let _ = test_dir::make_test_dir();
+
+        let test_args: Vec<String> = vec!["target/debug/vcs".to_string(), "init".to_string()];
+
+        assert_eq!("", init(&test_args));
+        check_empty_vcs_directory_exists();
+
+        assert_eq!("Already in a vcs directory.", init(&test_args));
     }
 
     #[test]
-    fn one_argument_in_vcs_dir() {}
+    fn one_argument_in_vcs_dir() {
+        let _ = test_dir::make_test_dir();
+
+        let test_args: Vec<String> = vec![
+            "target/debug/vcs".to_string(),
+            "init".to_string(),
+            "test_dir".to_string(),
+        ];
+
+        assert_eq!("", init(&test_args));
+        let _ = env::set_current_dir("test_dir");
+        check_empty_vcs_directory_exists();
+    }
+
+    fn check_empty_vcs_directory_exists() {
+        assert!(directory_exists(".vcs"));
+        assert!(directory_exists(".vcs/branches"));
+        assert!(directory_exists(".vcs/objects"));
+    }
+
+    fn directory_exists(path: &str) -> bool {
+        let path = path::Path::new(path);
+        fs::metadata(path)
+            .map(|metadata| metadata.is_dir())
+            .unwrap_or(false)
+    }
 }
