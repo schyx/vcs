@@ -7,7 +7,7 @@
 /// If already in a vcs directory, logs `Already in a vcs directory.` to the console.
 ///
 /// * `args` - arguments `init` was called with
-pub fn init(args: Vec<String>) -> String {
+pub fn init(_args: Vec<String>) -> String {
     String::from("")
 }
 
@@ -33,4 +33,12 @@ mod tests {
             init(test_args)
         );
     }
+
+    #[test]
+    fn zero_arguments_not_in_vcs_dir() {
+        // use fs::readdir I think
+    }
+
+    #[test]
+    fn one_argument_in_vcs_dir() {}
 }
