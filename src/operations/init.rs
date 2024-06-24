@@ -1,8 +1,9 @@
 use std::{
     env::set_current_dir,
-    fs::{create_dir, metadata, File},
-    path::Path,
+    fs::{create_dir, File},
 };
+
+use super::super::utils::fs_utils::directory_exists;
 
 /// Executes `vcs init` with `args` as arguments
 ///
@@ -40,14 +41,6 @@ pub fn init(args: &Vec<String>) -> String {
     }
 }
 
-/// Returns true iff `path` is a directory that exists
-pub fn directory_exists(path: &str) -> bool {
-    let path = Path::new(path);
-    metadata(path)
-        .map(|metadata| metadata.is_dir())
-        .unwrap_or(false)
-}
-
 /// Assuming program is in the correct directory, create an empty `.vcs` directory
 fn create_empty_vcs_dir() {
     let _ = create_dir(".vcs");
@@ -66,7 +59,7 @@ mod tests {
 
     use std::env::set_current_dir;
 
-    use super::super::super::utils::test_dir::make_test_dir;
+    use super::super::super::utils::{fs_utils::file_exists, test_dir::make_test_dir};
     use super::*;
 
     #[test]
@@ -116,13 +109,5 @@ mod tests {
         assert!(directory_exists(".vcs/branches"));
         assert!(directory_exists(".vcs/objects"));
         assert!(file_exists(".vcs/HEAD"));
-    }
-
-    /// Returns true iff `path` is a directory that exists
-    fn file_exists(path: &str) -> bool {
-        let path = Path::new(path);
-        metadata(path)
-            .map(|metadata| metadata.is_file())
-            .unwrap_or(false)
     }
 }
