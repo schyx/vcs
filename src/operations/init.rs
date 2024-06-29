@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     env::set_current_dir,
     fs::{create_dir, File},
     io::{Error, Write},
@@ -51,8 +50,8 @@ pub fn init(args: &Vec<String>) -> String {
 /// Will throw error if not in a vcs directory
 fn create_first_commit() -> String {
     assert!(directory_exists(".vcs"));
-    let subtrees: HashMap<String, String> = HashMap::new();
-    let subblobs: HashMap<String, String> = HashMap::new();
+    let subtrees: Vec<(String, String)> = vec![];
+    let subblobs: Vec<(String, String)> = vec![];
     let tree_hash = write_tree(&subtrees, &subblobs);
     write_commit("Initial commit", "No parent", 0, &tree_hash)
 }

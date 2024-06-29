@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use crate::{objects::write_object, utils::hash::sha2};
 
 /// Given the subtrees and subblobs, outputs the text and hash of the tree object, respectively
 fn get_tree_text_and_hash(
-    subtrees: &HashMap<String, String>,
-    subblobs: &HashMap<String, String>,
+    subtrees: &Vec<(String, String)>,
+    subblobs: &Vec<(String, String)>,
 ) -> (String, String) {
     let mut output = String::from("Trees\n");
     for (tree, hash) in subtrees {
@@ -26,10 +24,7 @@ fn get_tree_text_and_hash(
 }
 
 /// Returns the hash of a tree with subtrees and subblobs. Also creates the tree object
-pub fn write_tree(
-    subtrees: &HashMap<String, String>,
-    subblobs: &HashMap<String, String>,
-) -> String {
+pub fn write_tree(subtrees: &Vec<(String, String)>, subblobs: &Vec<(String, String)>) -> String {
     let (tree_text, tree_hash) = get_tree_text_and_hash(subtrees, subblobs);
     let _ = write_object(&tree_hash, &tree_text);
     tree_hash
@@ -47,19 +42,19 @@ mod tests {
 
     #[test]
     fn all_empty() {
-        let subtrees: HashMap<String, String> = HashMap::new();
-        let subblobs: HashMap<String, String> = HashMap::new();
+        let subtrees: Vec<(String, String)> = vec![];
+        let subblobs: Vec<(String, String)> = vec![];
         let (tree_text, _) = get_tree_text_and_hash(&subtrees, &subblobs);
         assert_eq!("Trees\nBlobs", tree_text);
     }
 
     #[test]
     fn both_populated() {
-        let subtrees: HashMap<String, String> = [("hello".to_string(), "world".to_string())]
+        let subtrees: Vec<(String, String)> = [("hello".to_string(), "world".to_string())]
             .iter()
             .cloned()
             .collect();
-        let subblobs: HashMap<String, String> = [
+        let subblobs: Vec<(String, String)> = [
             ("I".to_string(), "love".to_string()),
             ("rust".to_string(), "".to_string()),
         ]
