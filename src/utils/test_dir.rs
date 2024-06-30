@@ -12,7 +12,7 @@ pub struct TestDir {
 }
 
 pub fn make_test_dir() -> Result<TestDir, Error> {
-    let path: PathBuf = Result::expect(current_dir(), "Could not get the current directory");
+    let path: PathBuf = current_dir()?;
 
     let mut children: HashSet<PathBuf> = HashSet::new();
 

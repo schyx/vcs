@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn test_write_object() -> Result<(), Error> {
-        let _test_dir = make_test_dir();
+        let _test_dir = make_test_dir()?;
         let _ = create_dir(".vcs");
         let hash = "1234567890";
         let text = "test text";

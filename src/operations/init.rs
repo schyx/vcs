@@ -83,8 +83,8 @@ mod tests {
     use std::{env::set_current_dir, io::Read};
 
     #[test]
-    fn more_than_one_argument() {
-        let _test_dir = Result::expect(make_test_dir(), "Expected TestDir");
+    fn more_than_one_argument() -> Result<(), Error> {
+        let _test_dir = make_test_dir()?;
         let test_args: Vec<String> = vec![
             "target/debug/vcs".to_string(),
             "init".to_string(),
@@ -95,11 +95,12 @@ mod tests {
             "Incorrect number of arguments. Expected 0 or 1 arguments.",
             init(&test_args)
         );
+        Ok(())
     }
 
     #[test]
-    fn zero_arguments_not_in_vcs_dir() {
-        let _test_dir = Result::expect(make_test_dir(), "Expected TestDir");
+    fn zero_arguments_not_in_vcs_dir() -> Result<(), Error> {
+        let _test_dir = make_test_dir()?;
 
         let test_args: Vec<String> = vec!["target/debug/vcs".to_string(), "init".to_string()];
 
@@ -107,11 +108,12 @@ mod tests {
         check_empty_vcs_directory_exists();
 
         assert_eq!("Already in a vcs directory.", init(&test_args));
+        Ok(())
     }
 
     #[test]
-    fn one_argument_not_in_vcs_dir() {
-        let _test_dir = Result::expect(make_test_dir(), "Expected TestDir");
+    fn one_argument_not_in_vcs_dir() -> Result<(), Error> {
+        let _test_dir = make_test_dir()?;
 
         let test_args: Vec<String> = vec![
             "target/debug/vcs".to_string(),
@@ -122,6 +124,7 @@ mod tests {
         assert_eq!("", init(&test_args));
         let _ = set_current_dir("test_dir");
         check_empty_vcs_directory_exists();
+        Ok(())
     }
 
     fn check_empty_vcs_directory_exists() {
