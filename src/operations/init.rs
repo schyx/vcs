@@ -62,6 +62,7 @@ fn create_empty_vcs_dir() -> Result<(), Error> {
     let _ = create_dir(".vcs/objects");
     let _ = create_dir(".vcs/branches");
     let _ = File::create(".vcs/HEAD");
+    let _ = File::create(".vcs/index");
     let commit_hash = create_first_commit();
     let mut file = File::create(".vcs/branches/main")?;
     let _ = file.write_all(&commit_hash.as_bytes());
@@ -128,6 +129,7 @@ mod tests {
         assert!(directory_exists(".vcs/branches"));
         assert!(directory_exists(".vcs/objects"));
         assert!(file_exists(".vcs/HEAD"));
+        assert!(file_exists(".vcs/index"));
         let empty_tree = "Trees\nBlobs";
         let empty_tree_hash = sha2(empty_tree);
         let tree_path = format!(
