@@ -1,10 +1,10 @@
 use std::{
     fs::{create_dir_all, File},
-    io::{Error, Write},
+    io::{Error, Read, Write},
     path::Path,
 };
 
-use crate::utils::fs_utils::directory_exists;
+use crate::utils::fs_utils::{directory_exists, file_exists};
 
 pub mod blob;
 pub mod commit;
@@ -34,10 +34,32 @@ pub fn write_object(hash: &str, text: &str) -> Result<(), Error> {
     Ok(())
 }
 
+/// Given a hash of the object, returns the contents of the file
+///
+/// Will panic if the hash does not exist in the objects dir
+pub fn get_contents(hash: &str) -> String {
+    let file_name: String = format!(
+        ".vcs/objects/{}/{}",
+        hash[0..2].to_string(),
+        hash[2..].to_string()
+    );
+    if !file_exists(&file_name) {
+        panic!("No object with hash of {} exists.", hash);
+    }
+
+    let mut file = Result::expect(File::open(file_name), "");
+    let mut contents = String::new();
+    let _ = file.read_to_string(&mut contents);
+    contents
+}
+
 #[cfg(test)]
 mod tests {
     /*
      * tests that an object is created at the correct place
+     *
+     * tests that get_contents returns the correct contents if file exists, and that it panics when
+     * file doesn't exist
      */
 
     use std::{fs::create_dir, io::Read};
@@ -53,14 +75,25 @@ mod tests {
         let text = "test text";
         let _ = write_object(hash, text);
 
+        // tests that write_object has the correct side effects
         assert!(file_exists(".vcs/objects/12/34567890"));
-
         let mut file = File::open(".vcs/objects/12/34567890")?;
         let mut contents = String::new();
-
         file.read_to_string(&mut contents)?;
         assert_eq!(text, contents);
 
+        // test that get_contents gets the right contents
+        assert_eq!("test text", get_contents(hash));
+
         Ok(())
+    }
+
+    #[test]
+    #[should_panic(expected = "No object with hash of 1234567890 exists.")]
+    fn panics_correctly() {
+        let _test_dir = make_test_dir();
+        let _ = create_dir(".vcs");
+        let hash = "1234567890";
+        get_contents(hash);
     }
 }
