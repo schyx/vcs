@@ -1,4 +1,12 @@
-use std::fs::File;
+use std::{fs::OpenOptions, io::Write};
+
+use crate::{
+    objects::write_object,
+    utils::{
+        fs_utils::{directory_exists, file_exists, get_file_contents},
+        hash::sha2,
+    },
+};
 /// Executes `vcs add` with `args` as arguments
 ///
 /// If there is one argument, adds the file in the argument to the .vcs index
@@ -11,7 +19,29 @@ use std::fs::File;
 ///
 /// * `args` - arguments `init` was called with
 pub fn add(args: &Vec<String>) -> String {
-    "Not Implemented Yet".to_string()
+    if !directory_exists(".vcs") {
+        return String::from("Not in an initialized vcs directory.");
+    }
+
+    match args.len() {
+        3 => {
+            let filename = &args[2];
+            if !file_exists(filename) {
+                return String::from("File does not exist.");
+            }
+            let contents = get_file_contents(filename);
+            let hash = sha2(&contents);
+            let _ = write_object(&hash, &contents);
+            let mut file = OpenOptions::new()
+                .append(true)
+                .open(".vcs/index")
+                .expect("Cannot open file");
+            let to_index = format!("blob {} {}\n", hash, filename);
+            let _ = file.write_all(to_index.as_bytes());
+            String::from("")
+        }
+        _ => String::from("Incorrect operands."),
+    }
 }
 
 #[cfg(test)]
@@ -27,7 +57,10 @@ pub mod tests {
         operations::init::init,
         utils::{hash::sha2, test_dir::make_test_dir},
     };
-    use std::io::{Error, Read};
+    use std::{
+        fs::File,
+        io::{Error, Read},
+    };
 
     #[test]
     fn not_in_vcs_dir() -> Result<(), Error> {
@@ -92,9 +125,19 @@ pub mod tests {
         let mut index_file = File::open(".vcs/index")?;
         let _ = index_file.read_to_string(&mut index_contents);
         assert_eq!(
-            format!("blob {} test.txt", empty_string_hash),
+            format!("blob {} test.txt\n", empty_string_hash),
             index_contents
         );
         Ok(())
+    }
+
+    #[test]
+    fn same_as_commit_version() -> Result<(), Error> {
+        panic!("Add behavior after commit has been added");
+    }
+
+    #[test]
+    fn undoes_remove() -> Result<(), Error> {
+        panic!("Add behavior after rm has been added")
     }
 }
