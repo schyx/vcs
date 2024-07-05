@@ -57,10 +57,7 @@ pub mod tests {
         operations::init::init,
         utils::{hash::sha2, test_dir::make_test_dir},
     };
-    use std::{
-        fs::File,
-        io::{Error, Read},
-    };
+    use std::{fs::File, io::Error};
 
     #[test]
     fn not_in_vcs_dir() -> Result<(), Error> {
@@ -121,9 +118,7 @@ pub mod tests {
         // Mutation of vcs dir check
         let empty_string_hash = sha2("");
         assert_eq!("", get_contents(&empty_string_hash));
-        let mut index_contents = String::new();
-        let mut index_file = File::open(".vcs/index")?;
-        let _ = index_file.read_to_string(&mut index_contents);
+        let index_contents = get_file_contents(".vcs/index");
         assert_eq!(
             format!("blob {} test.txt\n", empty_string_hash),
             index_contents

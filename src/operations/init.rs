@@ -80,8 +80,12 @@ mod tests {
      */
 
     use super::*;
-    use crate::utils::{fs_utils::file_exists, hash::sha2, test_dir::make_test_dir};
-    use std::{env::set_current_dir, io::Read};
+    use crate::utils::{
+        fs_utils::{file_exists, get_file_contents},
+        hash::sha2,
+        test_dir::make_test_dir,
+    };
+    use std::env::set_current_dir;
 
     #[test]
     fn more_than_one_argument() -> Result<(), Error> {
@@ -156,15 +160,11 @@ mod tests {
         assert!(file_exists(&tree_path));
 
         assert!(file_exists(".vcs/branches/main"));
-        let mut file = Result::expect(File::open(".vcs/branches/main"), "");
-        let mut contents = String::new();
-        let _ = file.read_to_string(&mut contents);
+        let contents = get_file_contents(".vcs/branches/main");
         assert_eq!(first_commit_hash, contents);
 
         assert!(file_exists(".vcs/HEAD"));
-        let mut file = Result::expect(File::open(".vcs/HEAD"), "");
-        let mut contents = String::new();
-        let _ = file.read_to_string(&mut contents);
+        let contents = get_file_contents(".vcs/HEAD");
         assert_eq!(first_commit_hash, contents);
     }
 }

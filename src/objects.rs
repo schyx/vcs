@@ -1,10 +1,10 @@
 use std::{
     fs::{create_dir_all, File},
-    io::{Error, Read, Write},
+    io::{Error, Write},
     path::Path,
 };
 
-use crate::utils::fs_utils::{directory_exists, file_exists};
+use crate::utils::fs_utils::{directory_exists, file_exists, get_file_contents};
 
 pub mod blob;
 pub mod commit;
@@ -17,10 +17,7 @@ pub fn write_object(hash: &str, text: &str) -> Result<(), Error> {
     assert!(directory_exists(".vcs"));
     let dir_name = &hash[0..2];
     let file_name = &hash[2..];
-    let mut path = String::from(".vcs/objects/");
-    path.push_str(dir_name);
-    path.push_str("/");
-    path.push_str(file_name);
+    let path = format!(".vcs/objects/{}/{}", dir_name, file_name);
 
     // Create parent directories if they do not exist
     let parent_dir = Path::new(&path).parent().unwrap();
@@ -47,10 +44,7 @@ pub fn get_contents(hash: &str) -> String {
         panic!("No object with hash of {} exists.", hash);
     }
 
-    let mut file = Result::expect(File::open(file_name), "");
-    let mut contents = String::new();
-    let _ = file.read_to_string(&mut contents);
-    contents
+    get_file_contents(&file_name)
 }
 
 #[cfg(test)]
@@ -62,7 +56,7 @@ mod tests {
      * file doesn't exist
      */
 
-    use std::{fs::create_dir, io::Read};
+    use std::fs::create_dir;
 
     use super::*;
     use crate::utils::{fs_utils::file_exists, test_dir::make_test_dir};
@@ -76,10 +70,9 @@ mod tests {
         let _ = write_object(hash, text);
 
         // tests that write_object has the correct side effects
-        assert!(file_exists(".vcs/objects/12/34567890"));
-        let mut file = File::open(".vcs/objects/12/34567890")?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        let filename = ".vcs/objects/12/34567890";
+        assert!(file_exists(filename));
+        let contents = get_file_contents(filename);
         assert_eq!(text, contents);
 
         // test that get_contents gets the right contents
