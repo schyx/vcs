@@ -61,9 +61,10 @@ fn create_empty_vcs_dir() -> Result<(), Error> {
     let _ = create_dir(".vcs");
     let _ = create_dir(".vcs/objects");
     let _ = create_dir(".vcs/branches");
-    let _ = File::create(".vcs/HEAD");
     let _ = File::create(".vcs/index");
     let commit_hash = create_first_commit();
+    let mut file = File::create(".vcs/HEAD")?;
+    let _ = file.write_all(&commit_hash.as_bytes());
     let mut file = File::create(".vcs/branches/main")?;
     let _ = file.write_all(&commit_hash.as_bytes());
 
@@ -156,6 +157,12 @@ mod tests {
 
         assert!(file_exists(".vcs/branches/main"));
         let mut file = Result::expect(File::open(".vcs/branches/main"), "");
+        let mut contents = String::new();
+        let _ = file.read_to_string(&mut contents);
+        assert_eq!(first_commit_hash, contents);
+
+        assert!(file_exists(".vcs/HEAD"));
+        let mut file = Result::expect(File::open(".vcs/HEAD"), "");
         let mut contents = String::new();
         let _ = file.read_to_string(&mut contents);
         assert_eq!(first_commit_hash, contents);
