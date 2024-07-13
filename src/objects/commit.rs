@@ -6,17 +6,13 @@ fn commit_string_and_hash(
     time: i32,
     tree_hash: &str,
 ) -> (String, String) {
-    let mut commit_string = String::from("Message\n");
-    commit_string.push_str(&message);
-    commit_string.push_str("\n");
-    commit_string.push_str("Parent\n");
-    commit_string.push_str(&parent);
-    commit_string.push_str("\n");
-    commit_string.push_str("Time\n");
-    commit_string.push_str(&time.to_string());
-    commit_string.push_str("\n");
-    commit_string.push_str("Tree Hash\n");
-    commit_string.push_str(&tree_hash);
+    let commit_string = format!(
+        "Message\n{}\nParent\n{}\nTime\n{}\nTree Hash\n{}",
+        message,
+        parent,
+        time.to_string(),
+        tree_hash
+    );
     (commit_string.clone(), sha2(&commit_string))
 }
 
