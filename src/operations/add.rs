@@ -50,6 +50,9 @@ pub mod tests {
     // Partitions for add
     // Partition on error condition:
     //      Not in VCS dir, incorrect number of operands, file doesn't exist, no error
+    // Further partition on no error,
+    //      no error no subdirectories, there are subdirectories, same version as commit version,
+    //      file was removed
 
     use super::*;
     use crate::{
@@ -57,7 +60,10 @@ pub mod tests {
         operations::init::init,
         utils::{hash::sha2, test_dir::make_test_dir},
     };
-    use std::{fs::File, io::Error};
+    use std::{
+        fs::{create_dir_all, File},
+        io::Error,
+    };
 
     #[test]
     fn not_in_vcs_dir() -> Result<(), Error> {
@@ -121,6 +127,28 @@ pub mod tests {
         let index_contents = get_file_contents(".vcs/index");
         assert_eq!(
             format!("blob {} test.txt\n", empty_string_hash),
+            index_contents
+        );
+
+        // Subdirectory
+        let _ = create_dir_all("test_dir1/test_dir2/");
+        let mut file = File::create("test_dir1/test_dir2/test.txt")?;
+        let test_args: Vec<String> = vec![
+            "target/debug/vcs".to_string(),
+            "add".to_string(),
+            "test_dir1/test_dir2/test.txt".to_string(),
+        ];
+        let file_text = "Test subdirectories!";
+        let text_hash = sha2(file_text);
+        let _ = file.write(file_text.as_bytes());
+        assert_eq!("", add(&test_args));
+        assert_eq!(file_text, get_contents(&text_hash));
+        let index_contents = get_file_contents(".vcs/index");
+        assert_eq!(
+            format!(
+                "blob {} test.txt\nblob {} test_dir1/test_dir2/test.txt\n",
+                empty_string_hash, text_hash
+            ),
             index_contents
         );
         Ok(())
