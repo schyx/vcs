@@ -7,7 +7,8 @@ use crate::{
         hash::sha2,
     },
 };
-/// Executes `vcs add` with `args` as arguments
+/// Executes `vcs add` with `args` as arguments. Returns the string that should be logged to the
+/// console and the hash of the added object if operation was successful.
 ///
 /// If there is one argument, adds the file in the argument to the .vcs index
 /// If not in a vcs directory, log `Not in an initialized vcs directory.`
@@ -18,16 +19,19 @@ use crate::{
 /// hashes.
 ///
 /// * `args` - arguments `init` was called with
-pub fn add(args: &Vec<String>) -> String {
+pub fn add(args: &Vec<String>) -> (String, String) {
     if !directory_exists(".vcs") {
-        return String::from("Not in an initialized vcs directory.");
+        return (
+            String::from("Not in an initialized vcs directory."),
+            String::from(""),
+        );
     }
 
     match args.len() {
         3 => {
             let filename = &args[2];
             if !file_exists(filename) {
-                return String::from("File does not exist.");
+                return (String::from("File does not exist."), String::from(""));
             }
             let contents = get_file_contents(filename);
             let hash = sha2(&contents);
@@ -38,9 +42,9 @@ pub fn add(args: &Vec<String>) -> String {
                 .expect("Cannot open file");
             let to_index = format!("blob {} {}\n", hash, filename);
             let _ = file.write_all(to_index.as_bytes());
-            String::from("")
+            (String::from(""), hash)
         }
-        _ => String::from("Incorrect operands."),
+        _ => (String::from("Incorrect operands."), String::from("")),
     }
 }
 
@@ -74,7 +78,7 @@ pub mod tests {
             "add".to_string(),
             "test.txt".to_string(),
         ];
-        assert_eq!("Not in an initialized vcs directory.", add(&test_args));
+        assert_eq!("Not in an initialized vcs directory.", add(&test_args).0);
         Ok(())
     }
 
@@ -90,7 +94,7 @@ pub mod tests {
             "test.txt".to_string(),
             "test1.txt".to_string(),
         ];
-        assert_eq!("Incorrect operands.", add(&test_args));
+        assert_eq!("Incorrect operands.", add(&test_args).0);
         Ok(())
     }
 
@@ -103,7 +107,7 @@ pub mod tests {
             "add".to_string(),
             "test.txt".to_string(),
         ];
-        assert_eq!("File does not exist.", add(&test_args));
+        assert_eq!("File does not exist.", add(&test_args).0);
         Ok(())
     }
 
@@ -119,11 +123,13 @@ pub mod tests {
         ];
 
         // Console output check
-        assert_eq!("", add(&test_args));
+        let (output_string, output_hash) = add(&test_args);
+        assert_eq!("", output_string);
 
         // Mutation of vcs dir check
         let empty_string_hash = sha2("");
         assert_eq!("", get_contents(&empty_string_hash));
+        assert_eq!(output_hash, empty_string_hash);
         let index_contents = get_file_contents(".vcs/index");
         assert_eq!(
             format!("blob {} test.txt\n", empty_string_hash),
@@ -141,7 +147,9 @@ pub mod tests {
         let file_text = "Test subdirectories!";
         let text_hash = sha2(file_text);
         let _ = file.write(file_text.as_bytes());
-        assert_eq!("", add(&test_args));
+        let (output_text, output_hash) = add(&test_args);
+        assert_eq!("", output_text);
+        assert_eq!(output_hash, sha2(file_text));
         assert_eq!(file_text, get_contents(&text_hash));
         let index_contents = get_file_contents(".vcs/index");
         assert_eq!(
