@@ -1,6 +1,6 @@
 use std::{
     fs::{create_dir_all, File},
-    io::{Error, Write},
+    io::{Result, Write},
     path::Path,
 };
 
@@ -13,7 +13,7 @@ pub mod tree;
 /// Writes the object with hash `hash` and text `text` into the .vcs/objects directory
 ///
 /// Will throw an error if `.vcs` directory doesn't exist
-pub fn write_object(hash: &str, text: &str) -> Result<(), Error> {
+pub fn write_object(hash: &str, text: &str) -> Result<()> {
     assert!(directory_exists(".vcs"));
     let dir_name = &hash[0..2];
     let file_name = &hash[2..];
@@ -34,7 +34,7 @@ pub fn write_object(hash: &str, text: &str) -> Result<(), Error> {
 /// Given a hash of the object, returns the contents of the file
 ///
 /// Will panic if the hash does not exist in the objects dir
-pub fn get_object_contents(hash: &str) -> Result<String, Error> {
+pub fn get_object_contents(hash: &str) -> Result<String> {
     let file_name = format!(
         ".vcs/objects/{}/{}",
         hash[0..2].to_string(),
@@ -72,7 +72,7 @@ mod tests {
     use crate::utils::{fs_utils::file_exists, test_dir::make_test_dir};
 
     #[test]
-    fn test_write_object() -> Result<(), Error> {
+    fn test_write_object() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = create_dir(".vcs");
         let hash = "1234567890";

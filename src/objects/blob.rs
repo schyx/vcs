@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::Result;
 
 use crate::{
     objects::write_object,
@@ -8,7 +8,7 @@ use crate::{
 /// Creates a blob off of the given filename. Returns the hash of the blob.
 ///
 /// Throws an error if the filename doesn't exist
-pub fn create_blob(filename: &str) -> Result<String, Error> {
+pub fn create_blob(filename: &str) -> Result<String> {
     let contents = get_file_contents(filename)?;
     let contents = String::from("blob\n") + &contents;
     let hash = sha2(&contents);

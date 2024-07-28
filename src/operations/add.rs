@@ -1,6 +1,6 @@
 use std::{
     fs::OpenOptions,
-    io::{Error, Write},
+    io::{Result, Write},
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 /// hashes.
 ///
 /// * `args` - arguments `init` was called with
-pub fn add(args: &Vec<String>) -> Result<(String, String), Error> {
+pub fn add(args: &Vec<String>) -> Result<(String, String)> {
     if !directory_exists(".vcs") {
         return Ok((
             String::from("Not in an initialized vcs directory."),
@@ -62,13 +62,10 @@ pub mod tests {
         operations::init::init,
         utils::{fs_utils::get_file_contents, hash::sha2, test_dir::make_test_dir},
     };
-    use std::{
-        fs::{create_dir_all, File},
-        io::Error,
-    };
+    use std::fs::{create_dir_all, File};
 
     #[test]
-    fn not_in_vcs_dir() -> Result<(), Error> {
+    fn not_in_vcs_dir() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = File::create("test.txt");
         let test_args: Vec<String> = vec![
@@ -81,7 +78,7 @@ pub mod tests {
     }
 
     #[test]
-    fn incorrect_arg_number() -> Result<(), Error> {
+    fn incorrect_arg_number() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = init(&vec![
             String::from("target/debug/vcs"),
@@ -100,7 +97,7 @@ pub mod tests {
     }
 
     #[test]
-    fn file_does_not_exist() -> Result<(), Error> {
+    fn file_does_not_exist() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = init(&vec![
             String::from("target/debug/vcs"),
@@ -116,7 +113,7 @@ pub mod tests {
     }
 
     #[test]
-    fn correct_add_operation() -> Result<(), Error> {
+    fn correct_add_operation() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = init(&vec![
             String::from("target/debug/vcs"),
@@ -171,12 +168,12 @@ pub mod tests {
     }
 
     #[test]
-    fn same_as_commit_version() -> Result<(), Error> {
+    fn same_as_commit_version() -> Result<()> {
         panic!("Add behavior after commit has been added");
     }
 
     #[test]
-    fn undoes_remove() -> Result<(), Error> {
+    fn undoes_remove() -> Result<()> {
         panic!("Add behavior after rm has been added")
     }
 }

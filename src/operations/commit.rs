@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::Result;
 
 use chrono::Utc;
 
@@ -24,7 +24,7 @@ use crate::{
 /// information about time and author as well.
 ///
 /// * `args` - arguments `commit` was called with
-pub fn commit(args: &Vec<String>) -> Result<(String, String), Error> {
+pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
     if !directory_exists(".vcs") {
         return Ok((
             String::from("Not in an initialized vcs directory."),
@@ -98,17 +98,14 @@ mod tests {
         operations::{add::add, init::init},
         utils::{hash::sha2, test_dir::make_test_dir},
     };
-    use std::{
-        fs::File,
-        io::{Error, Write},
-    };
+    use std::{fs::File, io::Write};
 
     // Partitions for commit
     //      Failure cases: Not in directory, incorrect operands, no commit message, no changes or
     //          changes not added, correct
     //      If correct: Just adds, just removes, adds and removes
     #[test]
-    fn not_in_vcs_dir() -> Result<(), Error> {
+    fn not_in_vcs_dir() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = File::create("test.txt");
         let test_args: Vec<String> = vec![
@@ -124,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn incorrect_operands() -> Result<(), Error> {
+    fn incorrect_operands() -> Result<()> {
         // Setup
         let _test_dir = make_test_dir();
         let _ = init(&vec![
@@ -150,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn no_commit_message() -> Result<(), Error> {
+    fn no_commit_message() -> Result<()> {
         // Setup
         let _test_dir = make_test_dir();
         let _ = init(&vec![
@@ -171,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn empty_commit_message() -> Result<(), Error> {
+    fn empty_commit_message() -> Result<()> {
         // Setup
         let _test_dir = make_test_dir();
         let _ = init(&vec![
@@ -196,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn no_changes() -> Result<(), Error> {
+    fn no_changes() -> Result<()> {
         // Setup
         let _test_dir = make_test_dir();
         let _ = init(&vec![
@@ -216,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn correct_just_adds() -> Result<(), Error> {
+    fn correct_just_adds() -> Result<()> {
         let _test_dir = make_test_dir()?;
 
         // init vcs dir
@@ -261,12 +258,12 @@ mod tests {
     }
 
     #[test]
-    fn just_remove() -> Result<(), Error> {
+    fn just_remove() -> Result<()> {
         panic!("Not implemented");
     }
 
     #[test]
-    fn add_and_remove() -> Result<(), Error> {
+    fn add_and_remove() -> Result<()> {
         panic!("Not implemented");
     }
 }

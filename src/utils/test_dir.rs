@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     env::{current_dir, set_current_dir},
     fs::{read_dir, remove_dir_all, remove_file},
-    io::Error,
+    io::Result,
     path::PathBuf,
 };
 
@@ -11,7 +11,7 @@ pub struct TestDir {
     children: HashSet<PathBuf>, // this is the original children in dir_name
 }
 
-pub fn make_test_dir() -> Result<TestDir, Error> {
+pub fn make_test_dir() -> Result<TestDir> {
     let path: PathBuf = current_dir()?;
 
     let mut children: HashSet<PathBuf> = HashSet::new();
@@ -58,7 +58,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn check_remove_file() -> Result<(), Error> {
+    fn check_remove_file() -> Result<()> {
         let mut paths_before: HashSet<PathBuf> = HashSet::new();
 
         let cur_dir: PathBuf = current_dir()?;

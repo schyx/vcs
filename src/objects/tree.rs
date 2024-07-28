@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::Error};
+use std::{collections::HashMap, io::Result};
 
 use crate::{objects::write_object, utils::hash::sha2};
 
@@ -46,7 +46,7 @@ pub fn write_tree(subtrees: &Vec<String>, subblobs: &Vec<String>) -> String {
 /// Returns the hash of `filename` in the tree given by `tree_hash`, or `DNE` if hash doesn't exist
 ///
 /// Throws an error if `tree_hash` is not a valid tree
-pub fn find_file_in_tree(tree_hash: &str, filename: &str) -> Result<String, Error> {
+pub fn find_file_in_tree(tree_hash: &str, filename: &str) -> Result<String> {
     let tree_contents = get_object_contents(tree_hash)?;
     let serialized_tree = serialize_tree(&tree_contents);
     if filename.contains('/') {

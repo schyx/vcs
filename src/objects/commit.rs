@@ -1,4 +1,4 @@
-use std::io::Error;
+use std::io::Result;
 
 use crate::{
     objects::write_object,
@@ -36,7 +36,7 @@ pub fn write_commit(message: &str, parent: &str, time: i64, tree_hash: &str) -> 
 }
 
 /// Returns the hash of the current head commit. If unable to get a commit, panics.
-pub fn get_head_commit() -> Result<String, Error> {
+pub fn get_head_commit() -> Result<String> {
     assert!(directory_exists(".vcs"));
     let head_branch_or_hash = get_file_contents(".vcs/HEAD")?;
     let branch_name = format!(".vcs/branches/{}", head_branch_or_hash);
@@ -51,7 +51,7 @@ pub fn get_head_commit() -> Result<String, Error> {
 /// Returns the hash of the given file, or `DNE` if the file didn't exist in the given commit.
 ///
 /// Panics if the commit doesn't exist
-pub fn get_hash_in_commit(commit: &str, filename: &str) -> Result<String, Error> {
+pub fn get_hash_in_commit(commit: &str, filename: &str) -> Result<String> {
     let commit_file = format!(".vcs/objects/{}/{}", &commit[0..2], &commit[2..]);
     let tree_hash = get_line_in_file(&commit_file, 7)?;
     return find_file_in_tree(&tree_hash, filename); // TODO: Test after implementing commit
@@ -92,7 +92,7 @@ mod test {
     }
 
     #[test]
-    fn test_get_head() -> Result<(), Error> {
+    fn test_get_head() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let _ = init(&vec![
             String::from("target/debug/vcs"),

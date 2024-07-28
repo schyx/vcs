@@ -1,7 +1,7 @@
 use std::{
     env::set_current_dir,
     fs::{create_dir, File},
-    io::{Error, Write},
+    io::{Result, Write},
 };
 
 use crate::{
@@ -57,7 +57,7 @@ fn create_first_commit() -> String {
 }
 
 /// Assuming program is in the correct directory, create an empty `.vcs` directory
-fn create_empty_vcs_dir() -> Result<(), Error> {
+fn create_empty_vcs_dir() -> Result<()> {
     let _ = create_dir(".vcs");
     let _ = create_dir(".vcs/objects");
     let _ = create_dir(".vcs/branches");
@@ -88,7 +88,7 @@ mod tests {
     use std::env::set_current_dir;
 
     #[test]
-    fn more_than_one_argument() -> Result<(), Error> {
+    fn more_than_one_argument() -> Result<()> {
         let _test_dir = make_test_dir()?;
         let test_args: Vec<String> = vec![
             String::from("target/debug/vcs"),
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn zero_arguments_not_in_vcs_dir() -> Result<(), Error> {
+    fn zero_arguments_not_in_vcs_dir() -> Result<()> {
         let _test_dir = make_test_dir()?;
 
         let test_args: Vec<String> = vec![String::from("target/debug/vcs"), String::from("init")];
@@ -115,7 +115,7 @@ mod tests {
     }
 
     #[test]
-    fn one_argument_not_in_vcs_dir() -> Result<(), Error> {
+    fn one_argument_not_in_vcs_dir() -> Result<()> {
         let _test_dir = make_test_dir()?;
 
         let test_args: Vec<String> = vec![
@@ -129,7 +129,7 @@ mod tests {
         check_empty_vcs_directory_exists()
     }
 
-    fn check_empty_vcs_directory_exists() -> Result<(), Error> {
+    fn check_empty_vcs_directory_exists() -> Result<()> {
         assert!(directory_exists(".vcs"));
         assert!(directory_exists(".vcs/branches"));
         assert!(directory_exists(".vcs/objects"));
