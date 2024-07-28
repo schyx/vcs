@@ -50,8 +50,8 @@ pub fn init(args: &Vec<String>) -> String {
 /// Will throw error if not in a vcs directory
 fn create_first_commit() -> String {
     assert!(directory_exists(".vcs"));
-    let subtrees: Vec<(String, String)> = vec![];
-    let subblobs: Vec<(String, String)> = vec![];
+    let subtrees: Vec<String> = vec![];
+    let subblobs: Vec<String> = vec![];
     let tree_hash = write_tree(&subtrees, &subblobs);
     write_commit("Initial commit", "No parent", 0, &tree_hash)
 }
@@ -64,7 +64,7 @@ fn create_empty_vcs_dir() -> Result<(), Error> {
     let _ = File::create(".vcs/index");
     let commit_hash = create_first_commit();
     let mut file = File::create(".vcs/HEAD")?;
-    let _ = file.write_all(&commit_hash.as_bytes());
+    let _ = file.write_all("main".as_bytes());
     let mut file = File::create(".vcs/branches/main")?;
     let _ = file.write_all(&commit_hash.as_bytes());
 
@@ -91,10 +91,10 @@ mod tests {
     fn more_than_one_argument() -> Result<(), Error> {
         let _test_dir = make_test_dir()?;
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "init".to_string(),
-            "arg1".to_string(),
-            "arg2".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("init"),
+            String::from("arg1"),
+            String::from("arg2"),
         ];
         assert_eq!(
             "Incorrect number of arguments. Expected 0 or 1 arguments.",
@@ -107,13 +107,11 @@ mod tests {
     fn zero_arguments_not_in_vcs_dir() -> Result<(), Error> {
         let _test_dir = make_test_dir()?;
 
-        let test_args: Vec<String> = vec!["target/debug/vcs".to_string(), "init".to_string()];
+        let test_args: Vec<String> = vec![String::from("target/debug/vcs"), String::from("init")];
 
         assert_eq!("", init(&test_args));
-        check_empty_vcs_directory_exists();
-
         assert_eq!("Already in a vcs directory.", init(&test_args));
-        Ok(())
+        check_empty_vcs_directory_exists()
     }
 
     #[test]
@@ -121,18 +119,17 @@ mod tests {
         let _test_dir = make_test_dir()?;
 
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "init".to_string(),
-            "test_dir".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("init"),
+            String::from("test_dir"),
         ];
 
         assert_eq!("", init(&test_args));
         let _ = set_current_dir("test_dir");
-        check_empty_vcs_directory_exists();
-        Ok(())
+        check_empty_vcs_directory_exists()
     }
 
-    fn check_empty_vcs_directory_exists() {
+    fn check_empty_vcs_directory_exists() -> Result<(), Error> {
         assert!(directory_exists(".vcs"));
         assert!(directory_exists(".vcs/branches"));
         assert!(directory_exists(".vcs/objects"));
@@ -160,11 +157,12 @@ mod tests {
         assert!(file_exists(&tree_path));
 
         assert!(file_exists(".vcs/branches/main"));
-        let contents = get_file_contents(".vcs/branches/main");
+        let contents = get_file_contents(".vcs/branches/main")?;
         assert_eq!(first_commit_hash, contents);
 
         assert!(file_exists(".vcs/HEAD"));
-        let contents = get_file_contents(".vcs/HEAD");
-        assert_eq!(first_commit_hash, contents);
+        let contents = get_file_contents(".vcs/HEAD")?;
+        assert_eq!("main", contents);
+        Ok(())
     }
 }

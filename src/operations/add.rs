@@ -1,11 +1,11 @@
-use std::{fs::OpenOptions, io::Write};
+use std::{
+    fs::OpenOptions,
+    io::{Error, Write},
+};
 
 use crate::{
-    objects::write_object,
-    utils::{
-        fs_utils::{directory_exists, file_exists, get_file_contents},
-        hash::sha2,
-    },
+    objects::blob::create_blob,
+    utils::fs_utils::{directory_exists, file_exists},
 };
 /// Executes `vcs add` with `args` as arguments. Returns the string that should be logged to the
 /// console and the hash of the added object if operation was successful.
@@ -19,32 +19,30 @@ use crate::{
 /// hashes.
 ///
 /// * `args` - arguments `init` was called with
-pub fn add(args: &Vec<String>) -> (String, String) {
+pub fn add(args: &Vec<String>) -> Result<(String, String), Error> {
     if !directory_exists(".vcs") {
-        return (
+        return Ok((
             String::from("Not in an initialized vcs directory."),
             String::from(""),
-        );
+        ));
     }
 
     match args.len() {
         3 => {
             let filename = &args[2];
             if !file_exists(filename) {
-                return (String::from("File does not exist."), String::from(""));
+                return Ok((String::from("File does not exist."), String::from("")));
             }
-            let contents = get_file_contents(filename);
-            let hash = sha2(&contents);
-            let _ = write_object(&hash, &contents);
+            let hash = create_blob(filename)?;
             let mut file = OpenOptions::new()
                 .append(true)
                 .open(".vcs/index")
                 .expect("Cannot open file");
             let to_index = format!("blob {} {}\n", hash, filename);
             let _ = file.write_all(to_index.as_bytes());
-            (String::from(""), hash)
+            Ok((String::from(""), hash))
         }
-        _ => (String::from("Incorrect operands."), String::from("")),
+        _ => Ok((String::from("Incorrect operands."), String::from(""))),
     }
 }
 
@@ -60,9 +58,9 @@ pub mod tests {
 
     use super::*;
     use crate::{
-        objects::get_contents,
+        objects::get_object_contents,
         operations::init::init,
-        utils::{hash::sha2, test_dir::make_test_dir},
+        utils::{fs_utils::get_file_contents, hash::sha2, test_dir::make_test_dir},
     };
     use std::{
         fs::{create_dir_all, File},
@@ -74,63 +72,72 @@ pub mod tests {
         let _test_dir = make_test_dir()?;
         let _ = File::create("test.txt");
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "add".to_string(),
-            "test.txt".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
         ];
-        assert_eq!("Not in an initialized vcs directory.", add(&test_args).0);
+        assert_eq!("Not in an initialized vcs directory.", add(&test_args)?.0);
         Ok(())
     }
 
     #[test]
     fn incorrect_arg_number() -> Result<(), Error> {
         let _test_dir = make_test_dir()?;
-        let _ = init(&vec!["target/debug/vcs".to_string(), "init".to_string()]);
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
         let _ = File::create("test.txt");
         let _ = File::create("test1.txt");
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "add".to_string(),
-            "test.txt".to_string(),
-            "test1.txt".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+            String::from("test1.txt"),
         ];
-        assert_eq!("Incorrect operands.", add(&test_args).0);
+        assert_eq!("Incorrect operands.", add(&test_args)?.0);
         Ok(())
     }
 
     #[test]
     fn file_does_not_exist() -> Result<(), Error> {
         let _test_dir = make_test_dir()?;
-        let _ = init(&vec!["target/debug/vcs".to_string(), "init".to_string()]);
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "add".to_string(),
-            "test.txt".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
         ];
-        assert_eq!("File does not exist.", add(&test_args).0);
+        assert_eq!("File does not exist.", add(&test_args)?.0);
         Ok(())
     }
 
     #[test]
     fn correct_add_operation() -> Result<(), Error> {
         let _test_dir = make_test_dir()?;
-        let _ = init(&vec!["target/debug/vcs".to_string(), "init".to_string()]);
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
         let _ = File::create("test.txt");
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "add".to_string(),
-            "test.txt".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
         ];
 
         // Console output check
-        let (output_string, output_hash) = add(&test_args);
+        let (output_string, output_hash) = add(&test_args)?;
         assert_eq!("", output_string);
 
         // Mutation of vcs dir check
-        let empty_string_hash = sha2("");
-        assert_eq!("", get_contents(&empty_string_hash));
+        let empty_string_hash = sha2("blob\n");
+        assert_eq!("blob\n", get_object_contents(&empty_string_hash)?);
         assert_eq!(output_hash, empty_string_hash);
-        let index_contents = get_file_contents(".vcs/index");
+        let index_contents = get_file_contents(".vcs/index")?;
         assert_eq!(
             format!("blob {} test.txt\n", empty_string_hash),
             index_contents
@@ -140,22 +147,23 @@ pub mod tests {
         let _ = create_dir_all("test_dir1/test_dir2/");
         let mut file = File::create("test_dir1/test_dir2/test.txt")?;
         let test_args: Vec<String> = vec![
-            "target/debug/vcs".to_string(),
-            "add".to_string(),
-            "test_dir1/test_dir2/test.txt".to_string(),
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test_dir1/test_dir2/test.txt"),
         ];
         let file_text = "Test subdirectories!";
-        let text_hash = sha2(file_text);
+        let blob_text = String::from("blob\n") + file_text;
+        let blob_hash = sha2(&blob_text);
         let _ = file.write(file_text.as_bytes());
-        let (output_text, output_hash) = add(&test_args);
+        let (output_text, output_hash) = add(&test_args)?;
         assert_eq!("", output_text);
-        assert_eq!(output_hash, sha2(file_text));
-        assert_eq!(file_text, get_contents(&text_hash));
-        let index_contents = get_file_contents(".vcs/index");
+        assert_eq!(output_hash, sha2(&blob_text));
+        assert_eq!(blob_text, get_object_contents(&blob_hash)?);
+        let index_contents = get_file_contents(".vcs/index")?;
         assert_eq!(
             format!(
                 "blob {} test.txt\nblob {} test_dir1/test_dir2/test.txt\n",
-                empty_string_hash, text_hash
+                empty_string_hash, blob_hash
             ),
             index_contents
         );

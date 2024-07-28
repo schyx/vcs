@@ -34,8 +34,8 @@ pub fn write_object(hash: &str, text: &str) -> Result<(), Error> {
 /// Given a hash of the object, returns the contents of the file
 ///
 /// Will panic if the hash does not exist in the objects dir
-pub fn get_contents(hash: &str) -> String {
-    let file_name: String = format!(
+pub fn get_object_contents(hash: &str) -> Result<String, Error> {
+    let file_name = format!(
         ".vcs/objects/{}/{}",
         hash[0..2].to_string(),
         hash[2..].to_string()
@@ -47,12 +47,22 @@ pub fn get_contents(hash: &str) -> String {
     get_file_contents(&file_name)
 }
 
+/// Returns true iff a vcs object with the given hash exists
+pub fn object_exists(hash: &str) -> bool {
+    let file_name = format!(
+        ".vcs/objects/{}/{}",
+        hash[0..2].to_string(),
+        hash[2..].to_string()
+    );
+    return file_exists(&file_name);
+}
+
 #[cfg(test)]
 mod tests {
     /*
      * tests that an object is created at the correct place
      *
-     * tests that get_contents returns the correct contents if file exists, and that it panics when
+     * tests that get_object_contents returns the correct contents if file exists, and that it panics when
      * file doesn't exist
      */
 
@@ -72,11 +82,11 @@ mod tests {
         // tests that write_object has the correct side effects
         let filename = ".vcs/objects/12/34567890";
         assert!(file_exists(filename));
-        let contents = get_file_contents(filename);
+        let contents = get_file_contents(filename)?;
         assert_eq!(text, contents);
 
-        // test that get_contents gets the right contents
-        assert_eq!("test text", get_contents(hash));
+        // test that get_object_contents gets the right contents
+        assert_eq!("test text", get_object_contents(hash)?);
 
         Ok(())
     }
@@ -87,6 +97,6 @@ mod tests {
         let _test_dir = make_test_dir();
         let _ = create_dir(".vcs");
         let hash = "1234567890";
-        get_contents(hash);
+        let _ = get_object_contents(hash);
     }
 }
