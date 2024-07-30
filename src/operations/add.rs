@@ -18,7 +18,7 @@ use crate::{
 /// and adds the text of the file to the objects directory. It also updates the parent trees'
 /// hashes.
 ///
-/// * `args` - arguments `init` was called with
+/// * `args` - arguments `add` was called with
 pub fn add(args: &Vec<String>) -> Result<(String, String)> {
     if !directory_exists(".vcs") {
         return Ok((
