@@ -61,8 +61,12 @@ pub fn get_hash_in_commit(commit: &str, filename: &str) -> Result<String> {
 mod test {
     /* fields all exist */
 
+    use std::{fs::File, io::Write};
+
     use crate::{
-        objects::tree::EMPTY_TREE_HASH, operations::init::init, utils::test_dir::make_test_dir,
+        objects::tree::EMPTY_TREE_HASH,
+        operations::{add::add, commit::commit, init::init},
+        utils::test_dir::make_test_dir,
     };
 
     use super::*;
@@ -99,6 +103,40 @@ mod test {
             String::from("init"),
         ]);
         assert_eq!(INITIAL_COMMIT_HASH, get_head_commit()?);
+        Ok(())
+    }
+
+    #[test]
+    fn test_file_dne_in_prev_commit() -> Result<()> {
+        let _test_dir = make_test_dir()?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        assert_eq!("DNE", get_hash_in_commit(INITIAL_COMMIT_HASH, "file.py")?);
+        Ok(())
+    }
+
+    #[test]
+    fn test_file_exists_in_prev_commit() -> Result<()> {
+        let _test_dir = make_test_dir()?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let mut file = File::create("test.txt")?;
+        let _ = file.write("test prev commit hash thing".as_bytes());
+        let (_, file_hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let (_, commit_hash) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("message heheheha"),
+        ])?;
+        assert_eq!(file_hash, get_hash_in_commit(&commit_hash, "test.txt")?);
         Ok(())
     }
 }
