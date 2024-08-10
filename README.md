@@ -9,10 +9,12 @@ This is my attempt to implement a git-like version control system in Rust!
 
 3. If an operation needs to be in a vcs directory, will output ``Expected operation to be in a `vcs` directory.``
 
-### Individual Operation Rules
+### Supported Operations
 
-#### `init`
-1. If `init` is called when already in a VCS directory, will output `Already in a vcs directory`.
+1. `init`
+2. `add`
+3. `commit`
+4. `rm`
 
 
 ## Notes
