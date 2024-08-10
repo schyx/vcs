@@ -1,11 +1,14 @@
 use std::{
-    fs::OpenOptions,
+    fs::File,
     io::{Result, Write},
 };
 
 use crate::{
-    objects::blob::create_blob,
-    utils::fs_utils::{directory_exists, file_exists},
+    objects::{
+        blob::create_blob,
+        commit::{get_hash_in_commit, get_head_commit},
+    },
+    utils::fs_utils::{clear_file_contents, directory_exists, file_exists, get_file_contents},
 };
 /// Executes `vcs add` with `args` as arguments. Returns the string that should be logged to the
 /// console and the hash of the added object if operation was successful.
@@ -34,12 +37,58 @@ pub fn add(args: &Vec<String>) -> Result<(String, String)> {
                 return Ok((String::from("File does not exist."), String::from("")));
             }
             let hash = create_blob(filename)?;
-            let mut file = OpenOptions::new()
-                .append(true)
-                .open(".vcs/index")
-                .expect("Cannot open file");
-            let to_index = format!("blob {} {}\n", hash, filename);
-            let _ = file.write_all(to_index.as_bytes());
+            let prev_hash = get_hash_in_commit(&get_head_commit()?, filename)?;
+            let mut same_as_commit_version = false;
+            if prev_hash == hash {
+                same_as_commit_version = true;
+            }
+            let index_contents = get_file_contents(".vcs/index")?;
+            let mut output: Vec<String> = vec![];
+            let mut seen_file = false;
+            for line in index_contents.split('\n') {
+                if line == "" {
+                    break;
+                }
+                let split_line: Vec<&str> = line.split(" ").collect();
+                match split_line[0] {
+                    "blob" => {
+                        let line_filename = split_line[2];
+                        if line_filename != filename {
+                            output.push(line.to_string());
+                            continue;
+                        }
+                        seen_file = true;
+                        if !same_as_commit_version {
+                            println!("tarpaulin is wrong wtf");
+                            output.push(format!("blob {} {}", hash, filename))
+                        }
+                    }
+                    "rm" => {
+                        let line_filename = split_line[1];
+                        if line_filename != filename {
+                            output.push(line.to_string());
+                            continue;
+                        }
+                        seen_file = true;
+                        if !same_as_commit_version {
+                            output.push(format!("blob {} {}", hash, filename))
+                        }
+                    }
+                    _ => {
+                        panic!(
+                            "Expected either `blob` or `rm` as the first part of the index file line, but got {}",
+                            split_line[0]
+                        );
+                    }
+                }
+            }
+            if !seen_file && !same_as_commit_version {
+                output.push(format!("blob {} {}", hash, filename));
+            }
+            clear_file_contents(".vcs/index")?;
+            let new_index = output.join("\n");
+            let mut file = File::create(".vcs/index")?;
+            file.write_all(new_index.as_bytes())?;
             Ok((String::from(""), hash))
         }
         _ => Ok((String::from("Incorrect operands."), String::from(""))),
@@ -59,8 +108,12 @@ pub mod tests {
     use super::*;
     use crate::{
         objects::get_object_contents,
-        operations::init::init,
-        utils::{fs_utils::get_file_contents, hash::sha2, test_dir::make_test_dir},
+        operations::{commit::commit, init::init, rm::rm},
+        utils::{
+            fs_utils::{clear_file_contents, get_file_contents},
+            hash::sha2,
+            test_dir::make_test_dir,
+        },
     };
     use std::fs::{create_dir_all, File};
 
@@ -136,7 +189,7 @@ pub mod tests {
         assert_eq!(output_hash, empty_string_hash);
         let index_contents = get_file_contents(".vcs/index")?;
         assert_eq!(
-            format!("blob {} test.txt\n", empty_string_hash),
+            format!("blob {} test.txt", empty_string_hash),
             index_contents
         );
 
@@ -159,7 +212,7 @@ pub mod tests {
         let index_contents = get_file_contents(".vcs/index")?;
         assert_eq!(
             format!(
-                "blob {} test.txt\nblob {} test_dir1/test_dir2/test.txt\n",
+                "blob {} test.txt\nblob {} test_dir1/test_dir2/test.txt",
                 empty_string_hash, blob_hash
             ),
             index_contents
@@ -169,11 +222,89 @@ pub mod tests {
 
     #[test]
     fn same_as_commit_version() -> Result<()> {
-        panic!("Add behavior after commit has been added");
+        let _test_dir = make_test_dir()?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let _ = File::create("test.txt");
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ]);
+        let _ = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("Add empty test.txt"),
+        ]);
+
+        // Test emptiness of index after adding file of same state
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ]);
+        assert_eq!("", get_file_contents(".vcs/index")?);
+
+        // Change file and change back
+        let mut file = File::create("test.txt")?;
+        file.write_all(b"test text")?;
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ]);
+        clear_file_contents("test.txt")?;
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ]);
+        assert_eq!("", get_file_contents(".vcs/index")?);
+
+        // just change file
+        let mut file = File::create("test.txt")?;
+        file.write_all(b"test text")?;
+        let (_, hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        assert_eq!(
+            format!("blob {} test.txt", hash),
+            get_file_contents(".vcs/index")?
+        );
+        Ok(())
     }
 
     #[test]
     fn undoes_remove() -> Result<()> {
-        panic!("Add behavior after rm has been added")
+        let _test_dir = make_test_dir()?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let _ = File::create("test.txt");
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let _ = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test.txt"),
+        ]);
+        let (_, hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        assert_eq!(
+            format!("blob {} test.txt", hash),
+            get_file_contents(".vcs/index")?
+        );
+        Ok(())
     }
 }

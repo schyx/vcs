@@ -1,4 +1,8 @@
-use std::io::Result;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{Result, Write},
+};
 
 use chrono::Utc;
 
@@ -9,7 +13,7 @@ use crate::{
         tree::write_tree,
     },
     utils::fs_utils::{
-        clear_file_contents, directory_exists, get_file_contents, get_line_in_object,
+        clear_file_contents, directory_exists, file_exists, get_file_contents, get_line_in_object,
     },
 };
 
@@ -53,12 +57,17 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
             }
 
             let parent = &get_line_in_object(&get_head_commit()?, 7)?;
-            let parent_contents = get_object_contents(parent)?;
-            let mut parent_lines: Vec<String> = parent_contents
+            let parent_contents: Vec<String> = get_object_contents(parent)?
                 .split('\n')
                 .filter(|line| *line != "Blobs" && *line != "Trees")
                 .map(str::to_string)
                 .collect();
+            let mut parent_lines: HashMap<String, String> = HashMap::new();
+            for line in parent_contents {
+                if let Some((object_name, object_hash)) = line.split_once(": ") {
+                    parent_lines.insert(object_name.to_string(), object_hash.to_string());
+                }
+            }
             for change in index_contents.split('\n') {
                 if change == "" {
                     break;
@@ -68,21 +77,31 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
                     "blob" => {
                         let hash = split_change[1];
                         let filename = split_change[2];
-                        let new_line = format!("{}: {}", filename, hash);
-                        parent_lines.push(new_line);
+                        parent_lines.insert(filename.to_string(), hash.to_string());
+                    }
+                    "rm" => {
+                        let filename = split_change[1];
+                        parent_lines.remove(filename);
                     }
                     _ => {
-                        println!("{}", change);
-                        panic!("Not implemented yet!")
+                        panic!(
+                            "Expected change to be either `rm` or `blob`, got {}.",
+                            split_change[0]
+                        );
                     }
                 }
             }
-            parent_lines.sort();
-            let new_tree_hash = write_tree(&vec![], &parent_lines);
+            let mut parent_contents: Vec<String> = vec![];
+            for (object_name, object_hash) in &parent_lines {
+                parent_contents.push(format!("{}: {}", object_name, object_hash));
+            }
+            parent_contents.sort();
+            let new_tree_hash = write_tree(&vec![], &parent_contents);
             let message = &args[2];
             let parent = &get_head_commit()?;
             let time = Utc::now().timestamp();
             let new_commit_hash = write_commit(message, parent, time, &new_tree_hash);
+            update_head(new_commit_hash.clone())?;
             let _ = clear_file_contents(".vcs/index");
             Ok((String::from(""), new_commit_hash))
         }
@@ -90,12 +109,28 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
     }
 }
 
+/// Updates the commit that the current branch is pointing at.
+///
+/// Will throw an error if the current checked out commit is not on a branch
+fn update_head(commit_hash: String) -> Result<()> {
+    let head = get_file_contents(".vcs/HEAD")?;
+    let branch_file_name = format!(".vcs/branches/{}", head);
+    assert!(file_exists(&branch_file_name));
+    clear_file_contents(&branch_file_name)?;
+    let mut branch_file = File::create(branch_file_name)?;
+    branch_file.write_all(&commit_hash.into_bytes())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        objects::{commit::INITIAL_COMMIT_HASH, object_exists},
-        operations::{add::add, init::init},
+        objects::{
+            commit::{get_hash_in_commit, INITIAL_COMMIT_HASH},
+            object_exists,
+        },
+        operations::{add::add, init::init, rm::rm},
         utils::{hash::sha2, test_dir::make_test_dir},
     };
     use std::{fs::File, io::Write};
@@ -254,16 +289,120 @@ mod tests {
         assert_eq!(sha2(&commit_string), commit_hash);
         let index_contents_after_commit = get_file_contents(".vcs/index")?;
         assert_eq!(index_contents_after_commit, "");
+        assert_eq!(commit_hash, get_head_commit()?);
         Ok(())
     }
 
     #[test]
     fn just_remove() -> Result<()> {
-        panic!("Not implemented");
+        let _test_dir = make_test_dir()?;
+
+        // init vcs dir
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+
+        // mutate and add a file
+        let mut file = File::create("test.txt")?;
+        let file_text = "commit time!";
+        let _ = file.write(file_text.as_bytes());
+        let (_, _) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let mut file = File::create("test2.txt")?;
+        let file_text = "";
+        let _ = file.write(file_text.as_bytes());
+        let (_, _) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test2.txt"),
+        ])?;
+
+        // Commit
+        let (_, _) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Add test.txt and test2.txt"),
+        ])?;
+
+        let rm_text = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test.txt"),
+        ])?;
+        assert_eq!("", rm_text);
+        let _ = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test2.txt"),
+        ])?;
+        assert!(!file_exists("test.txt"));
+        assert!(!file_exists("test2.txt"));
+        let (_, _) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Remove test.txt and test2.txt"),
+        ])?;
+        let head_commit = get_head_commit()?;
+        assert_eq!("DNE", get_hash_in_commit(&head_commit, "test2.txt")?);
+        assert_eq!("DNE", get_hash_in_commit(&head_commit, "test.txt")?);
+
+        Ok(())
     }
 
     #[test]
     fn add_and_remove() -> Result<()> {
-        panic!("Not implemented");
+        let _test_dir = make_test_dir()?;
+
+        // init vcs dir
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+
+        // mutate and add a file
+        let mut file = File::create("test.txt")?;
+        let file_text = "commit time!";
+        let _ = file.write(file_text.as_bytes());
+        let (_, _) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+
+        // Commit
+        let (_, _) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Add test.txt"),
+        ])?;
+
+        let _ = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test.txt"),
+        ])?;
+        let mut file = File::create("test2.txt")?;
+        let file_text = "";
+        let _ = file.write(file_text.as_bytes());
+        let (_, _) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test2.txt"),
+        ])?;
+        let (_, commit_hash) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Add test2 and remove test1"),
+        ])?;
+        assert!(!file_exists("test.txt"));
+        let expected_tree = format!("Trees\nBlobs\ntest2.txt: {}", sha2("blob\n"));
+        let tree_hash = get_line_in_object(&commit_hash, 7)?;
+        assert_eq!(expected_tree, get_object_contents(&tree_hash)?);
+
+        Ok(())
     }
 }
