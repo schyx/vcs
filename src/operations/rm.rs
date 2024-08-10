@@ -1,5 +1,5 @@
 use std::{
-    fs::{remove_file, File, OpenOptions},
+    fs::{remove_file, File},
     io::{Result, Write},
 };
 
