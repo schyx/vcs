@@ -38,10 +38,7 @@ pub fn add(args: &Vec<String>) -> Result<(String, String)> {
             }
             let hash = create_blob(filename)?;
             let prev_hash = get_hash_in_commit(&get_head_commit()?, filename)?;
-            let mut same_as_commit_version = false;
-            if prev_hash == hash {
-                same_as_commit_version = true;
-            }
+            let same_as_commit_version = prev_hash == hash;
             let index_contents = get_file_contents(".vcs/index")?;
             let mut output: Vec<String> = vec![];
             let mut seen_file = false;
@@ -59,7 +56,6 @@ pub fn add(args: &Vec<String>) -> Result<(String, String)> {
                         }
                         seen_file = true;
                         if !same_as_commit_version {
-                            println!("tarpaulin is wrong wtf");
                             output.push(format!("blob {} {}", hash, filename))
                         }
                     }
@@ -275,6 +271,17 @@ pub mod tests {
             format!("blob {} test.txt", hash),
             get_file_contents(".vcs/index")?
         );
+        clear_file_contents("test.txt")?;
+        file.write_all(b"different")?;
+        let (_, hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        assert_eq!(
+            format!("blob {} test.txt", hash),
+            get_file_contents(".vcs/index")?
+        );
         Ok(())
     }
 
@@ -296,6 +303,43 @@ pub mod tests {
             String::from("rm"),
             String::from("test.txt"),
         ]);
+        let (_, hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        assert_eq!(
+            format!("blob {} test.txt", hash),
+            get_file_contents(".vcs/index")?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn coverage_for_rm_seen_file_branch() -> Result<()> {
+        let _test_dir = make_test_dir()?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let _file = File::create("test.txt")?;
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let _ = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Add test.txt"),
+        ])?;
+        let _ = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test.txt"),
+        ]);
+        let mut file = File::create("test.txt")?;
+        file.write_all(b"coverage!")?;
         let (_, hash) = add(&vec![
             String::from("target/debug/vcs"),
             String::from("add"),

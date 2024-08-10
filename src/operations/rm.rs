@@ -240,4 +240,45 @@ mod tests {
         assert_eq!("", index_contents);
         Ok(())
     }
+
+    #[test]
+    fn coverage_for_blob_not_same() -> Result<()> {
+        let _test_dir = make_test_dir()?;
+
+        // init vcs dir
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+
+        // mutate and add two files
+        let mut file = File::create("test.txt")?;
+        let file_text = "commit time!";
+        let _ = file.write(file_text.as_bytes());
+        let (_, _) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let mut file = File::create("test2.txt")?;
+        let file_text = "commit 2 time!";
+        let _ = file.write(file_text.as_bytes());
+        let (_, add_hash) = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test2.txt"),
+        ])?;
+
+        // remove one of them
+        let _ = rm(&vec![
+            String::from("target/debug/vcs"),
+            String::from("rm"),
+            String::from("test.txt"),
+        ]);
+        assert_eq!(
+            format!("blob {} test2.txt", add_hash),
+            get_file_contents(".vcs/index")?
+        );
+        Ok(())
+    }
 }

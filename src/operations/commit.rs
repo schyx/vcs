@@ -69,9 +69,6 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
                 }
             }
             for change in index_contents.split('\n') {
-                if change == "" {
-                    break;
-                }
                 let split_change: Vec<&str> = change.split(' ').collect();
                 match split_change[0] {
                     "blob" => {

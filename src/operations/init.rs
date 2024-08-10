@@ -126,7 +126,9 @@ mod tests {
 
         assert_eq!("", init(&test_args));
         let _ = set_current_dir("test_dir");
-        check_empty_vcs_directory_exists()
+        check_empty_vcs_directory_exists()?;
+        assert_eq!("Already in a vcs directory.", init(&test_args));
+        Ok(())
     }
 
     fn check_empty_vcs_directory_exists() -> Result<()> {
