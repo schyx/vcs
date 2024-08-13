@@ -147,16 +147,16 @@ mod tests {
         assert!(file_exists(&tree_path));
 
         let first_commit = format!(
-            "Message\nInitial commit\nParent\nNo parent\nTime\n0\nTree Hash\n{}",
+            "Parent\nNo parent\nTime\n0\nTree Hash\n{}\nMessage\nInitial commit",
             empty_tree_hash
         );
         let first_commit_hash = sha2(&first_commit);
-        let tree_path = format!(
+        let commit_path = format!(
             ".vcs/objects/{}/{}",
             first_commit_hash[0..2].to_string(),
             first_commit_hash[2..].to_string()
         );
-        assert!(file_exists(&tree_path));
+        assert!(file_exists(&commit_path));
 
         assert!(file_exists(".vcs/branches/main"));
         let contents = get_file_contents(".vcs/branches/main")?;

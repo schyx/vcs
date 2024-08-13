@@ -8,13 +8,11 @@ use chrono::Utc;
 
 use crate::{
     objects::{
-        commit::{get_head_commit, write_commit},
+        commit::{get_commit_tree, get_head_commit, write_commit},
         get_object_contents,
         tree::write_tree,
     },
-    utils::fs_utils::{
-        clear_file_contents, directory_exists, file_exists, get_file_contents, get_line_in_object,
-    },
+    utils::fs_utils::{clear_file_contents, directory_exists, file_exists, get_file_contents},
 };
 
 /// Executes `vcs commit`. Returns the string that is logged to the console, and the hash of the
@@ -56,7 +54,7 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
                 ));
             }
 
-            let parent = &get_line_in_object(&get_head_commit()?, 7)?;
+            let parent = &get_commit_tree(&get_head_commit()?)?;
             let parent_contents: Vec<String> = get_object_contents(parent)?
                 .split('\n')
                 .filter(|line| *line != "Blobs" && *line != "Trees")
@@ -124,7 +122,7 @@ mod tests {
     use super::*;
     use crate::{
         objects::{
-            commit::{get_hash_in_commit, INITIAL_COMMIT_HASH},
+            commit::{get_commit_tree, get_hash_in_commit, INITIAL_COMMIT_HASH},
             object_exists,
         },
         operations::{add::add, init::init, rm::rm},
@@ -277,11 +275,11 @@ mod tests {
         let tree_hash = sha2(&tree_text);
         assert!(object_exists(&tree_hash));
         let commit_string = format!(
-            "Message\n{}\nParent\n{}\nTime\n{}\nTree Hash\n{}",
-            "Add test.txt",
+            "Parent\n{}\nTime\n{}\nTree Hash\n{}\nMessage\n{}",
             INITIAL_COMMIT_HASH,
             time.to_string(),
-            tree_hash
+            tree_hash,
+            "Add test.txt",
         );
         assert_eq!(sha2(&commit_string), commit_hash);
         let index_contents_after_commit = get_file_contents(".vcs/index")?;
@@ -397,7 +395,7 @@ mod tests {
         ])?;
         assert!(!file_exists("test.txt"));
         let expected_tree = format!("Trees\nBlobs\ntest2.txt: {}", sha2("blob\n"));
-        let tree_hash = get_line_in_object(&commit_hash, 7)?;
+        let tree_hash = get_commit_tree(&commit_hash)?;
         assert_eq!(expected_tree, get_object_contents(&tree_hash)?);
 
         Ok(())
