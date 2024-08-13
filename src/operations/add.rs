@@ -6,7 +6,7 @@ use std::{
 use crate::{
     objects::{
         blob::create_blob,
-        commit::{get_hash_in_commit, get_head_commit, INITIAL_COMMIT_HASH},
+        commit::{get_hash_in_commit, get_head_commit},
     },
     utils::fs_utils::{clear_file_contents, directory_exists, file_exists, get_file_contents},
 };
