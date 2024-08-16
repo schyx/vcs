@@ -84,9 +84,9 @@ pub fn get_commit_parent(commit: &str) -> Result<Option<String>, Error> {
 }
 
 /// Given a commit hash, returns the time of the commit if it exists
-pub fn get_commit_time(commit: &str) -> Result<i32, Error> {
+pub fn get_commit_time(commit: &str) -> Result<i64, Error> {
     let line = get_line_in_object(commit, 3)?;
-    match line.parse::<i32>() {
+    match line.parse::<i64>() {
         Ok(value) => Ok(value),
         Err(e) => Err(Error::new(std::io::ErrorKind::InvalidData, e)),
     }
