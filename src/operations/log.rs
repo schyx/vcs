@@ -90,7 +90,7 @@ pub mod tests {
         ]);
         let test_args: Vec<String> = vec![
             String::from("target/debug/vcs"),
-            String::from("status"),
+            String::from("log"),
             String::from("test.txt"),
         ];
         assert_eq!("Incorrect operands.", log(&test_args)?);
