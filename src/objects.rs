@@ -57,6 +57,12 @@ pub fn object_exists(hash: &str) -> bool {
     return file_exists(&file_name);
 }
 
+/// Outputs the name of the current branch
+pub fn get_branch_name() -> Result<String> {
+    assert!(directory_exists(".vcs"));
+    get_file_contents(".vcs/HEAD")
+}
+
 #[cfg(test)]
 mod tests {
     /*

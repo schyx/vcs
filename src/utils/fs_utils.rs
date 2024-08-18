@@ -1,7 +1,7 @@
 use std::{
     fs::{metadata, File, OpenOptions},
-    io::{BufRead, BufReader, Read, Result},
-    path::Path,
+    io::{BufRead, BufReader, Lines, Read, Result},
+    path::{Path, PathBuf},
 };
 
 use crate::objects::object_exists;
@@ -52,4 +52,25 @@ pub fn get_line_in_object(hash: &str, line_num: usize) -> Result<String> {
 pub fn clear_file_contents(path: &str) -> Result<()> {
     OpenOptions::new().write(true).truncate(true).open(path)?;
     Ok(())
+}
+
+/// Returns the lines of a file that can be flattened to an iterator
+///
+/// Code from https://doc.rust-lang.org/rust-by-example/std_misc/file/read_lines.html
+pub fn read_lines<P>(filename: P) -> Result<Lines<BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(BufReader::new(file).lines())
+}
+
+/// Removes the `./` in a Pathbuf string
+pub fn no_dir_string(path: PathBuf) -> String {
+    path.file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
+        .to_string()
 }
