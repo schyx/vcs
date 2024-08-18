@@ -23,6 +23,7 @@ use crate::{
 ///
 /// * `args` - arguments `add` was called with
 pub fn add(args: &Vec<String>) -> Result<(String, String)> {
+    assert!(args[1] == "add");
     if !directory_exists(".vcs") {
         return Ok((
             String::from("Not in an initialized vcs directory."),
@@ -231,7 +232,7 @@ pub mod tests {
         ]);
         let _ = commit(&vec![
             String::from("target/debug/vcs"),
-            String::from("add"),
+            String::from("commit"),
             String::from("Add empty test.txt"),
         ]);
 

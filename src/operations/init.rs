@@ -19,6 +19,7 @@ use crate::{
 ///
 /// * `args` - arguments `init` was called with
 pub fn init(args: &Vec<String>) -> String {
+    assert!(args[1] == "init");
     match args.len() {
         2 => {
             if directory_exists(".vcs") {

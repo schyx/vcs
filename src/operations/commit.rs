@@ -27,6 +27,7 @@ use crate::{
 ///
 /// * `args` - arguments `commit` was called with
 pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
+    assert!(args[1] == "commit");
     if !directory_exists(".vcs") {
         return Ok((
             String::from("Not in an initialized vcs directory."),

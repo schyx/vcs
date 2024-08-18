@@ -23,6 +23,7 @@ use crate::{
 ///
 /// * `args` - arguments `rm` was called with
 pub fn rm(args: &Vec<String>) -> Result<String> {
+    assert!(args[1] == "rm");
     if !directory_exists(".vcs") {
         return Ok(String::from("Not in an initialized vcs directory."));
     }

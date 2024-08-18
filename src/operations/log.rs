@@ -22,6 +22,7 @@ use crate::{
 /// `Incorrect operands.` if more than 1 argument was supplied. If no commits have been made by the
 /// user, will log `Your current branch <BRANCH_NAME> has no commits yet.`.
 pub fn log(args: &Vec<String>) -> Result<String> {
+    assert!(args[1] == "log");
     if !directory_exists(".vcs") {
         return Ok(String::from("Not in an initialized vcs directory."));
     } else if args.len() != 2 {

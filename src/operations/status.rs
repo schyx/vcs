@@ -28,6 +28,7 @@ use crate::{
 /// Will log `Not in an initialized vcs directory.` if no vcs dir was found, and will log
 /// `Incorrect operands.` if more than 1 argument was supplied.
 pub fn status(args: &Vec<String>) -> Result<String> {
+    assert!(args[1] == "status");
     if !directory_exists(".vcs") {
         return Ok(String::from("Not in an initialized vcs directory."));
     } else if args.len() != 2 {
