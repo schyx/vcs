@@ -67,10 +67,5 @@ where
 
 /// Removes the `./` in a Pathbuf string
 pub fn no_dir_string(path: PathBuf) -> String {
-    path.file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_string()
-        .to_string()
+    path.file_name().unwrap().to_str().unwrap().to_string()
 }
