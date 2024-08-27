@@ -26,9 +26,9 @@ use crate::{
 ///         branch, and puts them in the working directory, overwriting the versions of the files
 ///         that are already there if they exist. Also, at the end of this command, the given
 ///         branch will now be considered the current branch (HEAD). Any files that are tracked in
-///         the current branch but are not present in the checked-out branch are deleted. Logs the
-///         text `Switched to branch <BRANCH_NAME>.` if it's a different branch. If the
-///         branch to check out is the current branch, log `Already on <BRANCH_NAME>.` If the
+///         the current branch but are not present in the checked-out branch are deleted. Clears
+///         the index. Logs the text `Switched to branch <BRANCH_NAME>.` if it's a different branch.
+///         If the branch to check out is the current branch, log `Already on <BRANCH_NAME>.` If the
 ///         branch does not exist, log `<BRANCH_NAME> does not exist.`
 ///     2. `vcs checkout [commit_id] -- <FILE_NAME>`: Takes the version of the file as it exists in
 ///         the commit with the given id, and puts it in the working directory, overwriting the
@@ -38,10 +38,10 @@ use crate::{
 ///         exists.`
 ///     3. `vcs checkout [commit_id]`: Takes all files in the commit specified, and puts them in
 ///        the working directory, overwriting the version of the files that are already there if
-///        they exist. Any files not tracked in the commit will be deleted. Logs `Switched to
-///        commit <COMMIT_ID>.` The new head will be detached, and any modications to the vcs
-///        directory (via `add`, `rm`, or `commit`) will return the message `Currently in a detached
-///        HEAD state, check out a branch to modify the directory.`
+///        they exist. Any files not tracked in the commit will be deleted, and clears the index.
+///        Logs `Switched to commit <COMMIT_ID>.` The new head will be detached, and any
+///        modications to the vcs directory (via `add`, `rm`, or `commit`) will return the message
+///        `Currently in a detached HEAD state, check out a branch to modify the directory.`
 ///
 /// If there are an incorrect number of arguments, log `Incorrect operands.`, and if not in an
 /// initialized vcs directory, log `Not in an initialized vcs directory.`.
@@ -57,9 +57,10 @@ pub fn checkout(args: &Vec<String>) -> Result<String> {
             }
             if file_exists(&format!(".vcs/branches/{}", args[2])) {
                 clear_file_contents(".vcs/HEAD")?;
-                // Modify HEAD file
+                // Modify HEAD file and index
                 let mut head_file = File::create(".vcs/HEAD")?;
                 head_file.write_all(args[2].as_bytes())?;
+                clear_file_contents(".vcs/index")?;
                 // // Modify directory state
                 let commit_hash = get_file_contents(&format!(".vcs/branches/{}", args[2]))?;
                 update_dir_state(commit_hash)?;
@@ -69,6 +70,7 @@ pub fn checkout(args: &Vec<String>) -> Result<String> {
                 // Modify HEAD file
                 let mut head_file = File::create(".vcs/HEAD")?;
                 head_file.write_all(args[2].as_bytes())?;
+                clear_file_contents(".vcs/index")?;
                 // // Modify directory state
                 update_dir_state(args[2].clone())?;
                 return Ok(format!("Switched to commit {}.", args[2]));
@@ -523,6 +525,11 @@ pub mod tests {
         clear_file_contents("f2.txt")?;
         let mut file_three = File::create("f3.txt")?;
         file_three.write_all("file 3 text".as_bytes())?;
+        add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("f3.txt"),
+        ])?;
         assert_eq!(
             format!("Switched to commit {}.", commit_hash),
             checkout(&vec![
@@ -531,6 +538,7 @@ pub mod tests {
                 commit_hash,
             ])?
         );
+        assert_eq!("", get_file_contents(".vcs/index")?);
         assert!(file_exists("f1.txt"));
         assert_eq!("file 1 text", get_file_contents("f1.txt")?);
         assert!(file_exists("f2.txt"));
