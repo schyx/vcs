@@ -46,8 +46,7 @@ pub fn get_head_commit() -> Result<String, Error> {
     if file_exists(&branch_name) {
         get_file_contents(&branch_name)
     } else {
-        panic!("not tested yet");
-        // Ok(head_branch_or_hash)
+        get_file_contents(".vcs/HEAD")
     }
 }
 

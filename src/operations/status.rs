@@ -6,7 +6,7 @@ use crate::{
         commit::{get_hash_in_commit, get_head_commit},
         get_branch_name,
     },
-    utils::fs_utils::{directory_exists, no_dir_string, read_lines},
+    utils::fs_utils::{directory_exists, file_exists, no_dir_string, read_lines},
 };
 
 /// Executes `vcs log` with `args` as arguments
@@ -38,7 +38,11 @@ pub fn status(args: &Vec<String>) -> Result<String> {
 
     // Branch name line
     let branch_name = get_branch_name()?;
-    output.push(format!("On branch {}", branch_name));
+    if file_exists(&format!(".vcs/branches/{}", branch_name)) {
+        output.push(format!("On branch {}", branch_name));
+    } else {
+        output.push(format!("On commit {}", branch_name));
+    }
 
     // Changes to be committed section
     let mut to_be_committed: Vec<String> = vec![];
@@ -154,6 +158,7 @@ pub mod tests {
     };
 
     use crate::{
+        objects::commit,
         operations::{
             add::add, branch::branch, checkout::checkout, commit::commit, init::init, rm::rm,
         },
@@ -438,6 +443,47 @@ pub mod tests {
             status(&vec![
                 String::from("target/debug/vcs"),
                 String::from("status")
+            ])?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_detached_head() -> Result<()> {
+        let _test_dir = make_test_dir()?;
+        create_dir("test_dir")?;
+        set_current_dir("test_dir")?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let _ = File::create("test.txt")?;
+        let _ = File::create("test2.txt")?;
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test2.txt"),
+        ])?;
+        let _ = add(&vec![
+            String::from("target/debug/vcs"),
+            String::from("add"),
+            String::from("test.txt"),
+        ])?;
+        let (_, commit_hash) = commit(&vec![
+            String::from("target/debug/vcs"),
+            String::from("commit"),
+            String::from("Add files"),
+        ])?;
+        let _ = checkout(&vec![
+            String::from("target/debug/vcs"),
+            String::from("checkout"),
+            commit_hash.clone(),
+        ]);
+        assert_eq!(
+            format!("On commit {}\nnothing to commit\n", commit_hash),
+            status(&vec![
+                String::from("target/debug/vcs"),
+                String::from("status"),
             ])?
         );
         Ok(())
