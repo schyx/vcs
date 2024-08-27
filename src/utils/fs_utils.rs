@@ -24,6 +24,7 @@ pub fn file_exists(path: &str) -> bool {
 
 /// Gets the text in file
 pub fn get_file_contents(path: &str) -> Result<String> {
+    assert!(file_exists(path));
     let mut file = File::open(path)?;
     let mut contents = String::new();
     let _ = file.read_to_string(&mut contents);
