@@ -3,9 +3,12 @@ use std::io::Result;
 use chrono::DateTime;
 
 use crate::{
-    objects::commit::{
-        get_commit_message, get_commit_parent, get_commit_time, get_head_commit,
-        INITIAL_COMMIT_HASH,
+    objects::{
+        commit::{
+            get_commit_message, get_commit_parent, get_commit_time, get_head_commit,
+            INITIAL_COMMIT_HASH,
+        },
+        get_branch_name,
     },
     utils::fs_utils::directory_exists,
 };
@@ -28,7 +31,7 @@ pub fn log(args: &Vec<String>) -> Result<String> {
     } else if args.len() != 2 {
         return Ok(String::from("Incorrect operands."));
     } else if get_head_commit()? == INITIAL_COMMIT_HASH {
-        let branch = "main";
+        let branch = get_branch_name()?;
         return Ok(format!(
             "Your current branch {} has no commits yet.",
             branch
@@ -63,14 +66,18 @@ pub mod tests {
     //      One commit have been made, two or more commits have been made
 
     use std::{
-        fs::File,
+        env::set_current_dir,
+        fs::{create_dir, File},
         io::{Result, Write},
     };
 
     use chrono::{Local, Utc};
 
     use crate::{
-        operations::{add::add, commit::commit, init::init, log::log, rm::rm},
+        operations::{
+            add::add, branch::branch, checkout::checkout, commit::commit, init::init, log::log,
+            rm::rm,
+        },
         utils::test_dir::make_test_dir,
     };
 
@@ -116,11 +123,28 @@ pub mod tests {
     #[test]
     fn no_commits_on_another_branch() -> Result<()> {
         let _test_dir = make_test_dir()?;
+        create_dir("test_dir")?;
+        set_current_dir("test_dir")?;
         let _ = init(&vec![
             String::from("target/debug/vcs"),
             String::from("init"),
         ]);
-        todo!("Add test after branching!");
+        let _ = branch(&vec![
+            String::from("target/debug/vcs"),
+            String::from("branch"),
+            String::from("testbranch"),
+        ])?;
+        let _ = checkout(&vec![
+            String::from("target/debug/vcs"),
+            String::from("checkout"),
+            String::from("testbranch"),
+        ])?;
+        let logged_output = log(&vec![String::from("target/debug/vcs"), String::from("log")])?;
+        assert_eq!(
+            "Your current branch testbranch has no commits yet.",
+            logged_output
+        );
+        Ok(())
     }
 
     #[test]

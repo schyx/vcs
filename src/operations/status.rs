@@ -154,7 +154,9 @@ pub mod tests {
     };
 
     use crate::{
-        operations::{add::add, commit::commit, init::init, rm::rm},
+        operations::{
+            add::add, branch::branch, checkout::checkout, commit::commit, init::init, rm::rm,
+        },
         utils::{fs_utils::clear_file_contents, test_dir::make_test_dir},
     };
 
@@ -190,7 +192,32 @@ pub mod tests {
 
     #[test]
     fn not_on_main() -> Result<()> {
-        todo!("Implement after adding branching");
+        let _test_dir = make_test_dir()?;
+        create_dir("test_dir")?;
+        set_current_dir("test_dir")?;
+        let _ = init(&vec![
+            String::from("target/debug/vcs"),
+            String::from("init"),
+        ]);
+        let _ = branch(&vec![
+            String::from("target/debug/vcs"),
+            String::from("branch"),
+            String::from("testbranch"),
+        ])?;
+        let _ = checkout(&vec![
+            String::from("target/debug/vcs"),
+            String::from("checkout"),
+            String::from("testbranch"),
+        ])?;
+        let _ = File::create("test.txt")?;
+        assert_eq!(
+            "On branch testbranch\nUntracked files:\n\ttest.txt\n",
+            status(&vec![
+                String::from("target/debug/vcs"),
+                String::from("status")
+            ])?
+        );
+        Ok(())
     }
 
     #[test]
