@@ -4,8 +4,11 @@ use std::{
 };
 
 use crate::{
-    objects::commit::{get_hash_in_commit, get_head_commit},
-    utils::fs_utils::{clear_file_contents, directory_exists, get_file_contents},
+    objects::{
+        commit::{get_hash_in_commit, get_head_commit},
+        get_branch_name,
+    },
+    utils::fs_utils::{clear_file_contents, directory_exists, file_exists, get_file_contents},
 };
 
 /// Executes `vcs rm` with `args` as arguments. Returns the string that should be logged to the
@@ -26,6 +29,10 @@ pub fn rm(args: &Vec<String>) -> Result<String> {
     assert!(args[1] == "rm");
     if !directory_exists(".vcs") {
         return Ok(String::from("Not in an initialized vcs directory."));
+    } else if !file_exists(&format!(".vcs/branches/{}", get_branch_name()?)) {
+        return Ok(String::from(
+            "Currently in a detached HEAD state. Check out a branch to modify the directory.",
+        ));
     }
     match args.len() {
         3 => {

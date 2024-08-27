@@ -7,6 +7,7 @@ use crate::{
     objects::{
         blob::create_blob,
         commit::{get_hash_in_commit, get_head_commit},
+        get_branch_name,
     },
     utils::fs_utils::{clear_file_contents, directory_exists, file_exists, get_file_contents},
 };
@@ -27,6 +28,13 @@ pub fn add(args: &Vec<String>) -> Result<(String, String)> {
     if !directory_exists(".vcs") {
         return Ok((
             String::from("Not in an initialized vcs directory."),
+            String::from(""),
+        ));
+    } else if !file_exists(&format!(".vcs/branches/{}", get_branch_name()?)) {
+        return Ok((
+            String::from(
+                "Currently in a detached HEAD state. Check out a branch to modify the directory.",
+            ),
             String::from(""),
         ));
     }

@@ -23,14 +23,15 @@ fn get_tree_text_and_hash(subtrees: &Vec<String>, subblobs: &Vec<String>) -> (St
     (output.clone(), sha2(&output))
 }
 
-fn serialize_tree(tree_contents: &str) -> HashMap<&str, &str> {
+/// Given the contents of a vcs tree, outputs a tree mapping filename to blob hashes
+pub fn serialize_tree(tree_contents: &str) -> HashMap<String, String> {
     let mut tree = HashMap::new();
     for line in tree_contents.split('\n') {
         if line == "Trees" || line == "Blobs" {
             continue;
         }
         let split_line: Vec<&str> = line.split(": ").collect();
-        let (object_name, object_hash) = (split_line[0], split_line[1]);
+        let (object_name, object_hash) = (split_line[0].to_string(), split_line[1].to_string());
         tree.insert(object_name, object_hash);
     }
     tree
