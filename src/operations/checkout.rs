@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-/// Executes `vcs checkout` with `args` as arguments. Returns the string taht should be locked to
+/// Executes `vcs checkout` with `args` as arguments. Returns the string that should be logged to
 /// the console.
 ///
 /// There are three possible use cases of this function:
