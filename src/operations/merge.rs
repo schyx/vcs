@@ -11,7 +11,7 @@ use crate::{
         get_branch_name, get_object_contents,
         tree::{serialize_tree, write_tree},
     },
-    operations::{add::add, commit::update_head},
+    operations::{add::add, checkout::checkout, commit::update_head},
     utils::fs_utils::{directory_exists, file_exists, get_file_contents, write_contents},
 };
 
@@ -81,6 +81,15 @@ pub fn merge(args: &Vec<String>) -> Result<String> {
                 &get_commit_tree(&original_merging_hash)?,
             );
             update_head(new_head)?;
+            let merge_tree = serialize_tree(&get_object_contents(&get_commit_tree(
+                &original_merging_hash,
+            )?)?);
+            for (fname, _) in merge_tree {
+                write_contents(
+                    &fname,
+                    &get_contents_in_commit(&original_merging_hash, &fname)?,
+                )?;
+            }
             return Ok(message);
         }
         merging_ancestors.insert(merging_hash.clone());
@@ -349,6 +358,7 @@ mod tests {
             get_commit_tree(&current_commit_hash)?
         );
         assert_eq!("", get_file_contents(".vcs/index")?);
+        assert_eq!("Text in file 2", get_file_contents("file2")?);
         Ok(())
     }
 
