@@ -108,7 +108,7 @@ pub fn commit(args: &Vec<String>) -> Result<(String, String)> {
 /// Updates the commit that the current branch is pointing at.
 ///
 /// Will throw an error if the current checked out commit is not on a branch
-fn update_head(commit_hash: String) -> Result<()> {
+pub fn update_head(commit_hash: String) -> Result<()> {
     let head = get_file_contents(".vcs/HEAD")?;
     let branch_file_name = format!(".vcs/branches/{}", head);
     assert!(file_exists(&branch_file_name));

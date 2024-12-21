@@ -158,7 +158,6 @@ pub mod tests {
     };
 
     use crate::{
-        objects::commit,
         operations::{
             add::add, branch::branch, checkout::checkout, commit::commit, init::init, rm::rm,
         },

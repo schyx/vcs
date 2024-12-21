@@ -1,6 +1,6 @@
 use std::{
     fs::{metadata, File, OpenOptions},
-    io::{BufRead, BufReader, Lines, Read, Result},
+    io::{BufRead, BufReader, Lines, Read, Result, Write},
     path::{Path, PathBuf},
 };
 
@@ -52,6 +52,16 @@ pub fn get_line_in_object(hash: &str, line_num: usize) -> Result<String> {
 /// Removes all contents from a file
 pub fn clear_file_contents(path: &str) -> Result<()> {
     OpenOptions::new().write(true).truncate(true).open(path)?;
+    Ok(())
+}
+
+/// Writes `contents` to `fname`. Creates `fname` if it doesn't already exist.
+pub fn write_contents(fname: &str, contents: &str) -> Result<()> {
+    if file_exists(fname) {
+        clear_file_contents(fname)?;
+    }
+    let mut f = File::create(fname)?;
+    f.write_all(contents.as_bytes())?;
     Ok(())
 }
 
