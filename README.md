@@ -15,7 +15,12 @@ This is my attempt to implement a git-like version control system in Rust!
 2. `add`
 3. `commit`
 4. `rm`
+5. `branch`
+6. `checkout`
+7. `merge`
+8. `status`
+9. `log`
 
 
 ## Notes
-1. Tests should be run in parallel. To do this, run `cargo test -- --test-threads=1`.
+1. Tests should be run in sequence. To do this, run `cargo test -- --test-threads=1`.
